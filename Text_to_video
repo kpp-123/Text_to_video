@@ -1,0 +1,97 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import PIL
+import tensorflow as tf
+import os
+import cv2
+import joblib
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.models import Sequential
+from PIL import Image
+
+from google.colab import drive
+drive.mount('/content/drive')
+train_dir = '/content/drive/MyDrive/for project/new search/Training'
+test_dir ='/content/drive/MyDrive/for project/new search/Testing'
+
+import cv2
+image = cv2.imread("/content/drive/MyDrive/for project/new search/Testing/Argue/augue (100).jpg")
+
+import matplotlib.pyplot as plt
+plt.imshow(image)
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+datagen_train = ImageDataGenerator(rescale=1.0/255,
+                                   #width_shift_range=0.1,  #Random horizontal translation
+                                   #height_shift_range=0.1,   #Random vertical translation
+                                   #zoom_range = 0.2,
+                                   #brightness_range = (0.5,1.5),
+                                   #rotation_range=5,  #Random rotation (degrees)
+                                   fill_mode='nearest'
+                                   )
+
+datagen_test = ImageDataGenerator(rescale=1.0/255,)
+
+batch_size = 5
+train_set = datagen_train.flow_from_directory(
+                                              train_dir,
+                                              target_size=(224, 224),
+                                              batch_size=batch_size,
+                                              color_mode='grayscale',
+                                              class_mode="categorical",
+                                              shuffle=True)
+test_set = datagen_test.flow_from_directory(
+                                            test_dir,
+                                            target_size=(224, 224),
+                                            batch_size=batch_size,
+                                            color_mode='grayscale',
+                                            class_mode="categorical",
+                                            shuffle=False)
+import tensorflow as tf
+input_shape = (224, 224, 1)
+
+model = tf.keras.models.Sequential([
+                                    tf.keras.layers.Conv2D(64, (3, 3), activation='relu', input_shape=input_shape),
+                                    tf.keras.layers.MaxPooling2D(2, 2),
+                                    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+                                    tf.keras.layers.MaxPooling2D(2, 2),
+                                    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+                                    tf.keras.layers.MaxPooling2D(2, 2),
+                                    tf.keras.layers.Flatten(),
+                                    tf.keras.layers.Dense(500, activation='relu'),
+                                    tf.keras.layers.Dense(100, activation='relu'),
+                                    tf.keras.layers.Dense(4, activation='softmax')])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+num_of_training_images = no_images
+history = model.fit(train_set,
+                    steps_per_epoch=num_of_training_images//batch_size,  #epoch (run တဲ့အကြိမ်အရေအတွက်) တခုမှာ ၁၅ကြိမ်သွားမယ်
+                    epochs=10,                   #count of runnning
+                    verbose = 2,
+                    shuffle = False)  #data တွေကို random/shuffle လုပ်ပြီး run
+
+y_predicted = model.predict(test_set) # A way to predict data
+
+y_pred = []
+for i in  y_predicted:
+  print(i)
+  print(np.argmax(i))
+  print()
+  y_pred.append(np.argmax(i))
+
+y_test = test_set.classes.tolist()
+
+#Confusion Matrix
+from sklearn.metrics import confusion_matrix
+confusion_matrix = confusion_matrix(y_test,y_pred)
+print('confusion_matrix')
+print(confusion_matrix)
+
+from sklearn.metrics import accuracy_score, precision_score, f1_score, recall_score
+
+print('Accuracy Score',accuracy_score(y_test,y_pred)*100,'%')
+print('Precision Macro Score ',precision_score(y_test,y_pred,average = 'macro')*100,'%')
+print('Recall_Score',recall_score(y_test,y_pred, average = 'macro')*100,'%')
+print('F1_Score',f1_score(y_test,y_pred, average = 'macro')*100,'%')
